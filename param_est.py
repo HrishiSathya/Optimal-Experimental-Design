@@ -120,21 +120,18 @@ class param_est():
 
         for i in range(self.time_horizon-1):
 
-            if i % self.sim_time_horizon <= 1: # ignoring the ending states and surrounding states
+            self.x = state[0,i]
+            self.theta = state[1,i]
+            self.xdot = state[2,i]
+            self.thetadot = state[3,i]
+            u = ctrl[i]
+
+            state_ip1 = state[:,i+1]
+
+            if ((state_ip1[0] - state[0,i]) * (state[2,i])**-1) >= self.dt*1.1 or ((state_ip1[0] - state[0,i]) * (state[2,i])**-1) < self.dt*0.8: # ignoring all huge or small time step jumps
                 continue
             else:
-                self.x = state[0,i]
-                self.theta = state[1,i]
-                self.xdot = state[2,i]
-                self.thetadot = state[3,i]
-                u = ctrl[i]
-
-                state_ip1 = state[:,i+1]
-
-                if ((state_ip1[0] - state[0,i]) * (state[2,i])**-1) >= self.dt*1.1 or ((state_ip1[0] - state[0,i]) * (state[2,i])**-1) < self.dt*0.8: # ignoring all huge time step jumps
-                    continue
-                else:
-                    loss += ca.sumsqr(state_ip1 - self.rk4(state[:,i],u))
+                loss += 0.5 * ca.sumsqr(state_ip1 - self.rk4(state[:,i],u))
             
         self.opti.minimize(loss)
         self.opti.subject_to(self.l_pole > 0)

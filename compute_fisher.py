@@ -97,9 +97,8 @@ class fisherComputation():
 
         state_next = jnp.vstack([self.x[1], self.theta[1], self.xdot[1], self.thetadot[1]])
 
-        # logged_loss = jnp.log(jnp.exp(0.5 * (state_next - state_dot)**2))
-        # logged_loss = jnp.exp(0.5 * (state_next - state_dot)**2)
-        logged_loss = 0.5 * (state_next - state_dot)**2
+        # logged_loss = jnp.log(jnp.exp(-0.5 * (state_next - state_dot)**2))
+        logged_loss = -0.5 * (state_next - state_dot)**2
         logged_loss = jnp.sum(logged_loss, axis=0).reshape((1,1))
 
         return jnp.squeeze(logged_loss)

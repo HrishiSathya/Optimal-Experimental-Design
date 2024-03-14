@@ -132,15 +132,15 @@ class main():
                 thetadot_init = 0., 
                 ctrl_init = 0.
                 conv = 1e-6
-                th = 10
+                th = 5
                 print("Running Trajectory Optimization...")
-                for t in tqdm(range(int(self.sim_time_horizon/th))):
+                for t in tqdm(range(int(self.sim_time_horizon))):
                     try:
                         # instantiate
                         opt = Traj_Optimization(l_pole_est = l_pole_est, 
                                             m_cart_est = m_cart_est, 
                                             m_pole_est = m_pole_est, 
-                                            th = 10, 
+                                            th = th, 
                                             fisher_prev = fisher_prev, 
                                             x_init= x_init,
                                             theta_init = theta_init, 
@@ -157,10 +157,12 @@ class main():
                         Restoration failed --> likely due to the linear solver used. Try using ma27 if the currant spral solver fails.
                         """
                         if 'Search_Direction_Becomes_Too_Small' in str(e):
-                            self.sim_time_horizon = current_iter*th
+                            print('\n EXIT: Search_Direction_Becomes_Too_Small...')
+                            self.sim_time_horizon = current_iter
                             break
                         elif 'Restoration_Failed' in str(e):
-                            self.sim_time_horizon = current_iter*th
+                            print('\n EXIT: Restoration_Failed...')
+                            self.sim_time_horizon = current_iter
                             break
                         else:
                             print(e)
@@ -170,20 +172,20 @@ class main():
                     Re-initialize the state, control, and other informative variables
                     """
                     fisher_prev = casadi.MX(fisher_prev)
-                    x_init = state[0,-1]
-                    theta_init = state[1,-1]
-                    xdot_init = state[2,-1]
-                    thetadot_init = state[3,-1]
-                    ctrl_init = ctrl[-1]
+                    x_init = state[0,1]
+                    theta_init = state[1,1]
+                    xdot_init = state[2,1]
+                    thetadot_init = state[3,1]
+                    ctrl_init = ctrl[1]
                     conv = 1e-6
 
                     # concatenation to previous states and controls
                     if t == 0:
-                        stateconcat = state
-                        ctrlconcat = ctrl
+                        stateconcat = state[:,1]
+                        ctrlconcat = [ctrl[1]]
                     else:
-                        stateconcat = np.concatenate((stateconcat, state), axis=1)
-                        ctrlconcat = np.concatenate((ctrlconcat, ctrl))
+                        stateconcat = np.concatenate((stateconcat.reshape(4,t), state[:,1].reshape(4,1)), axis=1)
+                        ctrlconcat = np.concatenate((ctrlconcat, [ctrl[1]]))
 
                 """
                 Run the simulation
@@ -223,7 +225,7 @@ class main():
                 fisher = fc_instance.run(l_pole_est, m_cart_est, m_pole_est) # compute
                 det_fisher = la.det(fisher) # take determinant
                 self.sim_time_horizon = self.restored_sim_time_horizon # reset the sim time horizon
-                time.sleep(1)
+                time.sleep(5)
 
                 # print("fisher: ", fisher)
                 print("det_fisher: ", det_fisher)
@@ -231,14 +233,14 @@ class main():
                 m_pole_est = nr.normal(loc=m_pole_est,scale=1/det_fisher,size=(1,1)).item() # the new estimate is sampled from a normal distribution with the computed mean and approximate variance (or a tight lower bound on it rather)
                 m_cart_est = nr.normal(loc=m_cart_est,scale=1/det_fisher,size=(1,1)).item() # the new estimate is sampled from a normal distribution with the computed mean and approximate variance (or a tight lower bound on it rather)
                 inv_fisher_det_list[trial].append(1/det_fisher) # append inverse fisher determinant
-                
+
         return inv_fisher_det_list
 
 m = main()
 
-random_inv_fisher_list = m.random_main()
-random_inv_fisher_list = np.array(random_inv_fisher_list).T
-np.savetxt("random_inv_fisher_list.txt", random_inv_fisher_list, delimiter=',')
+# random_inv_fisher_list = m.random_main()
+# random_inv_fisher_list = np.array(random_inv_fisher_list).T
+# np.savetxt("random_inv_fisher_list.txt", random_inv_fisher_list, delimiter=',')
 
 opt_inv_fisher_list = m.opt_main()
 opt_inv_fisher_list = np.array(opt_inv_fisher_list).T

@@ -145,7 +145,7 @@ class Traj_Optimization():
         outer component of chain rule
         """
 
-        dLdtheta = 2*(state_kp1 - casadi.vertcat(qdot, qddot)).reshape((4,1))
+        dLdtheta = -(state_kp1 - casadi.vertcat(qdot, qddot)).reshape((4,1))
 
         """
         dfdl_pole
@@ -254,7 +254,7 @@ class Traj_Optimization():
         
         return fisher
     
-    def D_opti(self):
+    def A_opti(self):
 
         """
         set up the optimization
@@ -324,7 +324,7 @@ class Traj_Optimization():
     
     def run(self):
 
-        self.D_opti()
+        self.A_opti()
         self.solution = self.opti.solve()
         u = self.solution.value(self.ctrl)
         x = self.solution.value(self.state)
@@ -333,7 +333,7 @@ class Traj_Optimization():
         w2 = self.solution.value(self.weight_2)
         f1 = self.solution.value(self.freq_1)
         f2 = self.solution.value(self.freq_2)
-        
+
         # det_fisher_k = fisher_k[0,0]*(fisher_k[1,1]*fisher_k[2,2] - fisher_k[2,1]*fisher_k[1,2]) - fisher_k[0,1]*(fisher_k[1,0]*fisher_k[2,2] - fisher_k[1,2]*fisher_k[2,0]) + fisher_k[0,2]*(fisher_k[1,0]*fisher_k[2,1] - fisher_k[1,1]*fisher_k[2,0])
         trace_fisher = fisher_k[0,0] + fisher_k[1,1] + fisher_k[2,2]
         print("\n fisher: \n", fisher_k)
