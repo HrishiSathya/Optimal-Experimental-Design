@@ -1,4 +1,4 @@
-try:   
+try:
     import numpy as np
     import numpy.random as nr
     import numpy.linalg as la
