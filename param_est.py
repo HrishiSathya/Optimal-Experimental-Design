@@ -11,6 +11,8 @@ except Exception as e:
 
 class param_est(inits):
 
+    print('this is a test')
+
     def __init__(self, state, ctrl, noise, T) -> None:
         super().__init__()
 
